@@ -15,19 +15,6 @@
           "samples": []
         },
         {
-          "slots": [],
-          "name": "HelloWorldIntent",
-          "samples": [
-            "hello",
-            "how are you",
-            "say hi world",
-            "say hi",
-            "hi",
-            "say hello world",
-            "say hello"
-          ]
-        },
-        {
           "name": "AMAZON.NavigateHomeIntent",
           "samples": []
         },
@@ -36,16 +23,51 @@
           "samples": []
         },
         {
-          "slots": [],
-          "name": "GmailIntent",
+          "slots": [
+            {
+              "name": "name",
+              "type": "AMAZON.Person"
+            }
+          ],
+          "name": "FanCountIntent",
           "samples": [
-            "tell me gmail",
-            "gmail"
+            "fan count of {name}",
+            "how many fans i have",
+            "How many fans in my fans list"
+          ]
+        },
+        {
+          "slots": [],
+          "name": "MessageIntent",
+          "samples": [
+            "new messages count",
+            "how many messages recived",
+            "inbox status"
+          ]
+        },
+        {
+          "slots": [],
+          "name": "EmailIntent",
+          "samples": [
+            "email",
+            "what is my email",
+            "what\u0027s my email address"
+          ]
+        },
+        {
+          "slots": [],
+          "name": "MobileIntent",
+          "samples": [
+            "mobile",
+            "phone",
+            "mobile number",
+            "what is my mobile number",
+            "what is my phone number"
           ]
         }
       ],
       "types": [],
-      "invocationName": "fan blast"
+      "invocationName": "fan blast one"
     }
   }
 }

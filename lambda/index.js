@@ -1,9 +1,7 @@
-/* *
- * This sample demonstrates handling intents from an Alexa skill using the Alexa Skills Kit SDK (v2).
- * Please visit https://alexa.design/cookbook for additional examples on implementing slots, dialog management,
- * session persistence, api calls, and more.
- * */
 const Alexa = require("ask-sdk-core");
+const axios = require("axios");
+
+const APP_NAME = "Fan Blast One";
 
 const messages = {
   NOTIFY_MISSING_PERMISSIONS:
@@ -11,8 +9,8 @@ const messages = {
   ERROR: "Uh Oh. Looks like something went wrong.",
 };
 
-const FULL_NAME_PERMISSION = "alexa::profile:name:read";
 const EMAIL_PERMISSION = "alexa::profile:email:read";
+const MOBILE_PERMISSION = "alexa::profile:mobile_number:read";
 
 const LaunchRequestHandler = {
   canHandle(handlerInput) {
@@ -22,7 +20,7 @@ const LaunchRequestHandler = {
   },
   handle(handlerInput) {
     const speakOutput =
-      "Welcome, you can say Hello or Help. Which would you like to try?";
+      "Welcome Fan Blast, for fan count you can say fan count or Help. Which would you like to try?";
 
     return handlerInput.responseBuilder
       .speak(speakOutput)
@@ -31,52 +29,80 @@ const LaunchRequestHandler = {
   },
 };
 
-const HelloWorldIntentHandler = {
+const fanCountIntentHandler = {
   canHandle(handlerInput) {
     return (
       Alexa.getRequestType(handlerInput.requestEnvelope) === "IntentRequest" &&
-      Alexa.getIntentName(handlerInput.requestEnvelope) === "HelloWorldIntent"
+      Alexa.getIntentName(handlerInput.requestEnvelope) === "FanCountIntent"
     );
   },
-  handle(handlerInput) {
-    const speakOutput = "Hello World!";
+  async handle(handlerInput) {
+    const { responseBuilder, requestEnvelope } = handlerInput;
 
-    return (
-      handlerInput.responseBuilder
-        .speak(speakOutput)
-        //.reprompt('add a reprompt if you want to keep the session open for the user to respond')
-        .getResponse()
+    const name = Alexa.getSlotValue(requestEnvelope, "name");
+
+    const res = await axios.get(
+      `https://api.fanblast.com/api/v1/creators/${name}/fan-counts`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
     );
+    const speakOutput = res
+      ? `${name} has ${res.data.data.totalFanCounts} fans`
+      : `sorry ${name} not found`;
+
+    return responseBuilder
+      .speak(speakOutput)
+      .reprompt(speakOutput)
+      .getResponse();
+
+    // return responseBuilder.speak(name).reprompt(name).getResponse();
   },
 };
 
-const GmailIntentHandler = {
+const msgIntentHandler = {
   canHandle(handlerInput) {
     return (
       Alexa.getRequestType(handlerInput.requestEnvelope) === "IntentRequest" &&
-      Alexa.getIntentName(handlerInput.requestEnvelope) === "GmailIntent"
+      Alexa.getIntentName(handlerInput.requestEnvelope) === "MsgIntent"
+    );
+  },
+  async handle(handlerInput) {
+    const speakOutput = `You have total ${Math.round(
+      Math.random(10) * 100
+    )} msg in your inbox!`;
+
+    return handlerInput.responseBuilder
+      .speak(speakOutput)
+      .reprompt(speakOutput)
+      .getResponse();
+  },
+};
+
+const EmailIntentHandler = {
+  canHandle(handlerInput) {
+    return (
+      handlerInput.requestEnvelope.request.type === "IntentRequest" &&
+      handlerInput.requestEnvelope.request.intent.name === "EmailIntent"
     );
   },
   async handle(handlerInput) {
     const { serviceClientFactory, responseBuilder } = handlerInput;
     try {
-      const upsServiceClient = serviceClientFactory.getUpsServiceClient();
-
-      const profileEmail = await upsServiceClient.getProfileEmail();
-
+      const profileEmail = await emailFinder(serviceClientFactory);
       if (!profileEmail) {
-        const speakOutput = "It looks like you don't have an email set.";
-
+        const noEmailResponse = `It looks like you don't have an email set. You can set your email from the companion app.`;
         return responseBuilder
-          .speak(speakOutput)
-          .reprompt(speakOutput)
+          .speak(noEmailResponse)
+          .withSimpleCard(APP_NAME, noEmailResponse)
           .getResponse();
       }
-      const speakOutput = `Your email is, ${profileEmail}`;
-
+      const speechResponse = `Your email is here, ${profileEmail}`;
       return responseBuilder
-        .speak(speakOutput)
-        .reprompt(speakOutput)
+        .speak(speechResponse)
+        .withSimpleCard(APP_NAME, speechResponse)
         .getResponse();
     } catch (error) {
       console.log(JSON.stringify(error));
@@ -93,19 +119,71 @@ const GmailIntentHandler = {
   },
 };
 
+const MobileIntentHandler = {
+  canHandle(handlerInput) {
+    return (
+      handlerInput.requestEnvelope.request.type === "IntentRequest" &&
+      handlerInput.requestEnvelope.request.intent.name === "MobileIntent"
+    );
+  },
+  async handle(handlerInput) {
+    const { serviceClientFactory, responseBuilder } = handlerInput;
+    try {
+      const profileMobileObject = await mobileFinder(serviceClientFactory);
+
+      if (!profileMobileObject) {
+        const errorResponse = `It looks like you don't have a mobile number set. You can set your mobile number from the companion app.`;
+        return responseBuilder
+          .speak(errorResponse)
+          .withSimpleCard(APP_NAME, errorResponse)
+          .getResponse();
+      }
+      const profileMobile = profileMobileObject.phoneNumber;
+      const speechResponse = `Your mobile number is, <say-as interpret-as="telephone">${profileMobile}</say-as>`;
+      const cardResponse = `Your mobile number is, ${profileMobile}`;
+      return responseBuilder
+        .speak(speechResponse)
+        .withSimpleCard(APP_NAME, cardResponse)
+        .getResponse();
+    } catch (error) {
+      console.log(JSON.stringify(error));
+      if (error.statusCode === 403) {
+        return responseBuilder
+          .speak(messages.NOTIFY_MISSING_PERMISSIONS)
+          .withAskForPermissionsConsentCard([MOBILE_PERMISSION])
+          .getResponse();
+      }
+      console.log(JSON.stringify(error));
+      const response = responseBuilder.speak(messages.ERROR).getResponse();
+      return response;
+    }
+  },
+};
+
+const mobileFinder = async (serviceClientFactory) => {
+  const upsServiceClient = serviceClientFactory.getUpsServiceClient();
+  const profileMobileObject = await upsServiceClient.getProfileMobileNumber();
+};
+
+const emailFinder = async (serviceClientFactory) => {
+  const upsServiceClient = serviceClientFactory.getUpsServiceClient();
+  return await upsServiceClient.getProfileEmail();
+};
+
 const HelpIntentHandler = {
   canHandle(handlerInput) {
     return (
-      Alexa.getRequestType(handlerInput.requestEnvelope) === "IntentRequest" &&
-      Alexa.getIntentName(handlerInput.requestEnvelope) === "AMAZON.HelpIntent"
+      handlerInput.requestEnvelope.request.type === "IntentRequest" &&
+      handlerInput.requestEnvelope.request.intent.name === "AMAZON.HelpIntent"
     );
   },
   handle(handlerInput) {
-    const speakOutput = "You can say hello to me! How can I help?";
+    const speechText = "You can say hello to me!";
 
     return handlerInput.responseBuilder
-      .speak(speakOutput)
-      .reprompt(speakOutput)
+      .speak(speechText)
+      .reprompt(speechText)
+      .withSimpleCard("Hello World", speechText)
       .getResponse();
   },
 };
@@ -113,121 +191,76 @@ const HelpIntentHandler = {
 const CancelAndStopIntentHandler = {
   canHandle(handlerInput) {
     return (
-      Alexa.getRequestType(handlerInput.requestEnvelope) === "IntentRequest" &&
-      (Alexa.getIntentName(handlerInput.requestEnvelope) ===
+      handlerInput.requestEnvelope.request.type === "IntentRequest" &&
+      (handlerInput.requestEnvelope.request.intent.name ===
         "AMAZON.CancelIntent" ||
-        Alexa.getIntentName(handlerInput.requestEnvelope) ===
+        handlerInput.requestEnvelope.request.intent.name ===
           "AMAZON.StopIntent")
     );
   },
   handle(handlerInput) {
-    const speakOutput = "Goodbye!";
+    const speechText = "Goodbye!";
 
-    return handlerInput.responseBuilder.speak(speakOutput).getResponse();
+    return handlerInput.responseBuilder.speak(speechText).getResponse();
   },
 };
-/* *
- * FallbackIntent triggers when a customer says something that doesn’t map to any intents in your skill
- * It must also be defined in the language model (if the locale supports it)
- * This handler can be safely added but will be ingnored in locales that do not support it yet
- * */
-const FallbackIntentHandler = {
-  canHandle(handlerInput) {
-    return (
-      Alexa.getRequestType(handlerInput.requestEnvelope) === "IntentRequest" &&
-      Alexa.getIntentName(handlerInput.requestEnvelope) ===
-        "AMAZON.FallbackIntent"
-    );
-  },
-  handle(handlerInput) {
-    const speakOutput = "Sorry, I don't know about that. Please try again.";
 
-    return handlerInput.responseBuilder
-      .speak(speakOutput)
-      .reprompt(speakOutput)
-      .getResponse();
-  },
-};
-/* *
- * SessionEndedRequest notifies that a session was ended. This handler will be triggered when a currently open
- * session is closed for one of the following reasons: 1) The user says "exit" or "quit". 2) The user does not
- * respond or says something that does not match an intent defined in your voice model. 3) An error occurs
- * */
 const SessionEndedRequestHandler = {
   canHandle(handlerInput) {
-    return (
-      Alexa.getRequestType(handlerInput.requestEnvelope) ===
-      "SessionEndedRequest"
-    );
+    return handlerInput.requestEnvelope.request.type === "SessionEndedRequest";
   },
   handle(handlerInput) {
     console.log(
-      `~~~~ Session ended: ${JSON.stringify(handlerInput.requestEnvelope)}`
+      `Session ended with reason: ${handlerInput.requestEnvelope.request.reason}`
     );
-    // Any cleanup logic goes here.
-    return handlerInput.responseBuilder.getResponse(); // notice we send an empty response
-  },
-};
-/* *
- * The intent reflector is used for interaction model testing and debugging.
- * It will simply repeat the intent the user said. You can create custom handlers for your intents
- * by defining them above, then also adding them to the request handler chain below
- * */
-const IntentReflectorHandler = {
-  canHandle(handlerInput) {
-    return (
-      Alexa.getRequestType(handlerInput.requestEnvelope) === "IntentRequest"
-    );
-  },
-  handle(handlerInput) {
-    const intentName = Alexa.getIntentName(handlerInput.requestEnvelope);
-    const speakOutput = `You just triggered ${intentName}`;
 
-    return (
-      handlerInput.responseBuilder
-        .speak(speakOutput)
-        //.reprompt('add a reprompt if you want to keep the session open for the user to respond')
-        .getResponse()
-    );
+    return handlerInput.responseBuilder.getResponse();
   },
 };
-/**
- * Generic error handling to capture any syntax or routing errors. If you receive an error
- * stating the request handler chain is not found, you have not implemented a handler for
- * the intent being invoked or included it in the skill builder below
- * */
+
 const ErrorHandler = {
   canHandle() {
     return true;
   },
   handle(handlerInput, error) {
-    const speakOutput =
-      "Sorry, I had trouble doing what you asked. Please try again.";
-    console.log(`~~~~ Error handled: ${JSON.stringify(error)}`);
+    console.log(`Error handled: ${error.message}`);
 
     return handlerInput.responseBuilder
-      .speak(speakOutput)
-      .reprompt(speakOutput)
+      .speak("Sorry, I can't understand the command. Please say again.")
+      .reprompt("Sorry, I can't understand the command. Please say again.")
       .getResponse();
   },
 };
 
-/**
- * This handler acts as the entry point for your skill, routing all request and response
- * payloads to the handlers above. Make sure any new handlers or interceptors you've
- * defined are included below. The order matters - they're processed top to bottom
- * */
-exports.handler = Alexa.SkillBuilders.custom()
+const RequestLog = {
+  process(handlerInput) {
+    console.log(
+      `REQUEST ENVELOPE = ${JSON.stringify(handlerInput.requestEnvelope)}`
+    );
+  },
+};
+
+const ResponseLog = {
+  process(handlerInput) {
+    console.log(`RESPONSE BUILDER = ${JSON.stringify(handlerInput)}`);
+  },
+};
+
+const skillBuilder = Alexa.SkillBuilders.custom();
+
+exports.handler = skillBuilder
   .addRequestHandlers(
     LaunchRequestHandler,
-    HelloWorldIntentHandler,
-    GmailIntentHandler,
+    EmailIntentHandler,
+    MobileIntentHandler,
     HelpIntentHandler,
     CancelAndStopIntentHandler,
-    FallbackIntentHandler,
     SessionEndedRequestHandler,
-    IntentReflectorHandler
+    fanCountIntentHandler,
+    msgIntentHandler
   )
+  .addRequestInterceptors(RequestLog)
+  .addResponseInterceptors(ResponseLog)
   .addErrorHandlers(ErrorHandler)
-  .withCustomUserAgent("sample/hello-world/v1.2")
+  .withApiClient(new Alexa.DefaultApiClient())
   .lambda();
