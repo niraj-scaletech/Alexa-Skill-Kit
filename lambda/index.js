@@ -10,6 +10,7 @@ const messages = {
 };
 
 const EMAIL_PERMISSION = "alexa::profile:email:read";
+const NAME_PERMISSION = "alexa::profile:name:read";
 const MOBILE_PERMISSION = "alexa::profile:mobile_number:read";
 
 const LaunchRequestHandler = {
@@ -78,6 +79,44 @@ const msgIntentHandler = {
       .speak(speakOutput)
       .reprompt(speakOutput)
       .getResponse();
+  },
+};
+
+const NameIntentHandler = {
+  canHandle(handlerInput) {
+    return (
+      handlerInput.requestEnvelope.request.type === "IntentRequest" &&
+      handlerInput.requestEnvelope.request.intent.name === "NameIntent"
+    );
+  },
+  async handle(handlerInput) {
+    const { serviceClientFactory, responseBuilder } = handlerInput;
+    try {
+      const profileName = await nameFinder(serviceClientFactory);
+      if (!profileName) {
+        const noNameResponse = `It looks like you don't have an name set. You can set your name from the companion app.`;
+        return responseBuilder
+          .speak(noNameResponse)
+          .withSimpleCard(APP_NAME, noNameResponse)
+          .getResponse();
+      }
+      const speechResponse = `Your name is here, ${profileName}`;
+      return responseBuilder
+        .speak(speechResponse)
+        .withSimpleCard(APP_NAME, speechResponse)
+        .getResponse();
+    } catch (error) {
+      console.log(JSON.stringify(error));
+      if (error.statusCode === 403) {
+        return responseBuilder
+          .speak(messages.NOTIFY_MISSING_PERMISSIONS)
+          .withAskForPermissionsConsentCard([NAME_PERMISSION])
+          .getResponse();
+      }
+      console.log(JSON.stringify(error));
+      const response = responseBuilder.speak(messages.ERROR).getResponse();
+      return response;
+    }
   },
 };
 
@@ -170,6 +209,11 @@ const emailFinder = async (serviceClientFactory) => {
   return await upsServiceClient.getProfileEmail();
 };
 
+const nameFinder = async (serviceClientFactory) => {
+  const upsServiceClient = serviceClientFactory.getUpsServiceClient();
+  return await upsServiceClient.getProfileName();
+};
+
 const HelpIntentHandler = {
   canHandle(handlerInput) {
     return (
@@ -252,6 +296,7 @@ exports.handler = skillBuilder
   .addRequestHandlers(
     LaunchRequestHandler,
     EmailIntentHandler,
+    NameIntentHandler,
     MobileIntentHandler,
     HelpIntentHandler,
     CancelAndStopIntentHandler,
