@@ -3,24 +3,24 @@
     "apis": {
       "custom": {
         "endpoint": {
-          "uri": "arn:aws:lambda:us-east-1:292390782991:function:96262bd6-ae48-4067-bb85-d24d8e788333:Release_0"
+          "uri": "arn:aws:lambda:us-east-1:271001947720:function:50594ad2-6574-4349-b1f1-f96f9f744d20:Release_0"
         },
         "interfaces": [],
         "locales": {},
         "regions": {
-          "NA": {
-            "endpoint": {
-              "uri": "arn:aws:lambda:us-east-1:292390782991:function:96262bd6-ae48-4067-bb85-d24d8e788333:Release_0"
-            }
-          },
           "EU": {
             "endpoint": {
-              "uri": "arn:aws:lambda:eu-west-1:292390782991:function:96262bd6-ae48-4067-bb85-d24d8e788333:Release_0"
+              "uri": "arn:aws:lambda:eu-west-1:271001947720:function:50594ad2-6574-4349-b1f1-f96f9f744d20:Release_0"
+            }
+          },
+          "NA": {
+            "endpoint": {
+              "uri": "arn:aws:lambda:us-east-1:271001947720:function:50594ad2-6574-4349-b1f1-f96f9f744d20:Release_0"
             }
           },
           "FE": {
             "endpoint": {
-              "uri": "arn:aws:lambda:us-west-2:292390782991:function:96262bd6-ae48-4067-bb85-d24d8e788333:Release_0"
+              "uri": "arn:aws:lambda:us-west-2:271001947720:function:50594ad2-6574-4349-b1f1-f96f9f744d20:Release_0"
             }
           }
         }
@@ -29,13 +29,16 @@
     "manifestVersion": "1.0",
     "permissions": [
       {
-        "name": "alexa::profile:given_name:read"
+        "name": "alexa::profile:name:read"
       },
       {
         "name": "alexa::profile:email:read"
       },
       {
         "name": "alexa::profile:mobile_number:read"
+      },
+      {
+        "name": "alexa::alerts:reminders:skill:readwrite"
       }
     ],
     "publishingInformation": {
@@ -50,7 +53,7 @@
             "help"
           ],
           "keywords": [],
-          "name": "Fan blast one",
+          "name": "Fan Blast One",
           "summary": "Sample Short Description"
         }
       },

@@ -1,5 +1,60 @@
 {
   "interactionModel": {
+    "dialog": {
+      "intents": [
+        {
+          "slots": [
+            {
+              "name": "username",
+              "elicitationRequired": true,
+              "type": "AMAZON.FirstName",
+              "confirmationRequired": false,
+              "prompts": {
+                "elicitation": "Elicit.Slot.305394803245.120010167314"
+              }
+            },
+            {
+              "name": "socialtype",
+              "elicitationRequired": true,
+              "type": "socialtype",
+              "confirmationRequired": false,
+              "prompts": {
+                "elicitation": "Elicit.Slot.305394803245.1608091197785"
+              }
+            }
+          ],
+          "name": "SocialIntent",
+          "confirmationRequired": false,
+          "prompts": {}
+        },
+        {
+          "slots": [
+            {
+              "name": "duration",
+              "elicitationRequired": true,
+              "type": "AMAZON.DURATION",
+              "confirmationRequired": false,
+              "prompts": {
+                "elicitation": "Elicit.Slot.1330677815272.1027356617777"
+              }
+            },
+            {
+              "name": "username",
+              "elicitationRequired": true,
+              "type": "AMAZON.FirstName",
+              "confirmationRequired": false,
+              "prompts": {
+                "elicitation": "Elicit.Slot.1330677815272.1199297120388"
+              }
+            }
+          ],
+          "name": "StartUpdatesIntent",
+          "confirmationRequired": false,
+          "prompts": {}
+        }
+      ],
+      "delegationStrategy": "ALWAYS"
+    },
     "languageModel": {
       "intents": [
         {
@@ -64,10 +119,203 @@
             "what is my mobile number",
             "what is my phone number"
           ]
+        },
+        {
+          "slots": [
+            {
+              "name": "username",
+              "type": "AMAZON.FirstName",
+              "samples": [
+                "for {username}",
+                "{username}"
+              ]
+            },
+            {
+              "name": "socialtype",
+              "type": "socialtype",
+              "samples": [
+                "for {socialtype}",
+                "{socialtype}"
+              ]
+            }
+          ],
+          "name": "SocialIntent",
+          "samples": [
+            "give me {socialtype} link  of {username}",
+            "{socialtype} link of {username}"
+          ]
+        },
+        {
+          "slots": [
+            {
+              "name": "duration",
+              "type": "AMAZON.DURATION",
+              "samples": [
+                "every {duration}",
+                "{duration}"
+              ]
+            },
+            {
+              "name": "username",
+              "type": "AMAZON.FirstName",
+              "samples": [
+                "for {username}",
+                "{username}"
+              ]
+            }
+          ],
+          "name": "StartUpdatesIntent",
+          "samples": [
+            "keep me updated with {username} fans every {duration}",
+            "remind me fancount ",
+            "get me fancounts of {username} every {duration}"
+          ]
         }
       ],
-      "types": [],
+      "types": [
+        {
+          "values": [
+            {
+              "name": {
+                "synonyms": [
+                  "ig"
+                ],
+                "value": "instagram"
+              },
+              "id": "01"
+            },
+            {
+              "name": {
+                "synonyms": [
+                  "fb"
+                ],
+                "value": "facebook"
+              },
+              "id": "02"
+            },
+            {
+              "name": {
+                "synonyms": [
+                  "yt"
+                ],
+                "value": "youtube"
+              },
+              "id": "03"
+            },
+            {
+              "name": {
+                "synonyms": [
+                  "tk"
+                ],
+                "value": "tiktok"
+              },
+              "id": "04"
+            },
+            {
+              "name": {
+                "synonyms": [
+                  "tch"
+                ],
+                "value": "twitch"
+              },
+              "id": "05"
+            },
+            {
+              "name": {
+                "synonyms": [
+                  "twt"
+                ],
+                "value": "twitter"
+              },
+              "id": "06"
+            }
+          ],
+          "name": "socialtype"
+        }
+      ],
       "invocationName": "fan blast one"
-    }
+    },
+    "prompts": [
+      {
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "For which user you want {socialtype} link?"
+          }
+        ],
+        "id": "Elicit.Slot.734772271395.770646318317"
+      },
+      {
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Please provide social type"
+          },
+          {
+            "type": "PlainText",
+            "value": "For which social type do you want link?"
+          }
+        ],
+        "id": "Elicit.Slot.734772271395.275936582506"
+      },
+      {
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "do you confirm ?"
+          }
+        ],
+        "id": "Confirm.Intent.1355904287273"
+      },
+      {
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Did I hear your name correctly. Is your name {username} ?"
+          }
+        ],
+        "id": "Confirm.Slot.375454201576.539142131735"
+      },
+      {
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "ok, but which social type link do you want?"
+          }
+        ],
+        "id": "Elicit.Slot.305394803245.1608091197785"
+      },
+      {
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "ok, but for which user you want {socialtype} link?"
+          }
+        ],
+        "id": "Elicit.Slot.305394803245.120010167314"
+      },
+      {
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Ok, but for which time range i will update you?"
+          }
+        ],
+        "id": "Elicit.Slot.1330677815272.1027356617777"
+      },
+      {
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "ok, got it but please provide username"
+          },
+          {
+            "type": "PlainText",
+            "value": "ok,but for which user you want fan count?"
+          }
+        ],
+        "id": "Elicit.Slot.1330677815272.1199297120388"
+      }
+    ]
   }
 }

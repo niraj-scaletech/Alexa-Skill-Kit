@@ -13,6 +13,15 @@ const EMAIL_PERMISSION = "alexa::profile:email:read";
 const NAME_PERMISSION = "alexa::profile:name:read";
 const MOBILE_PERMISSION = "alexa::profile:mobile_number:read";
 
+const social = {
+  Instagram: "ig",
+  facebook: "fb",
+  YouTube: "yt",
+  tiktok: "tk",
+  twitch: "tch",
+  twitter: "twt",
+};
+
 const LaunchRequestHandler = {
   canHandle(handlerInput) {
     return (
@@ -214,6 +223,77 @@ const nameFinder = async (serviceClientFactory) => {
   return await upsServiceClient.getProfileName();
 };
 
+const SocialIntentHandler = {
+  canHandle(handlerInput) {
+    return (
+      Alexa.getRequestType(handlerInput.requestEnvelope) === "IntentRequest" &&
+      Alexa.getIntentName(handlerInput.requestEnvelope) === "SocialIntent"
+    );
+  },
+  async handle(handlerInput) {
+    const { requestEnvelope, responseBuilder } = handlerInput;
+
+    const username = Alexa.getSlotValue(requestEnvelope, "username");
+    const socialtype = Alexa.getSlotValue(requestEnvelope, "socialtype");
+
+    const res = await axios.get(
+      `https://api.fanblast.com/api/v1/creators/${username}/detail`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const linkData =
+      Object.keys(res.data.data).length !== 0
+        ? res.data.data.links.find((item) => item.type == social[socialtype])
+        : null;
+
+    const speakOutput = linkData
+      ? `${socialtype} link is ${linkData.url} for ${username}.`
+      : `sorry ${socialtype} link for ${username} is not found`;
+
+    return responseBuilder
+      .speak(speakOutput)
+      .reprompt(speakOutput)
+      .getResponse();
+  },
+};
+
+const StartUpdatesIntentHandler = {
+  canHandle(handlerInput) {
+    return (
+      Alexa.getRequestType(handlerInput.requestEnvelope) === "IntentRequest" &&
+      Alexa.getIntentName(handlerInput.requestEnvelope) === "StartUpdatesIntent"
+    );
+  },
+  async handle(handlerInput) {
+    const { requestEnvelope, responseBuilder } = handlerInput;
+
+    const username = Alexa.getSlotValue(requestEnvelope, "username");
+    const duration = Alexa.getSlotValue(requestEnvelope, "duration");
+
+    const res = await axios.get(
+      `https://api.fanblast.com/api/v1/creators/${username}/fan-counts`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const speakOutput = res
+      ? `${username} has ${res.data.data.totalFanCounts} fans after ${duration}`
+      : `sorry ${username} not found`;
+
+    return responseBuilder
+      .speak(speakOutput)
+      .reprompt(speakOutput)
+      .getResponse();
+  },
+};
+
 const HelpIntentHandler = {
   canHandle(handlerInput) {
     return (
@@ -295,6 +375,8 @@ const skillBuilder = Alexa.SkillBuilders.custom();
 exports.handler = skillBuilder
   .addRequestHandlers(
     LaunchRequestHandler,
+    SocialIntentHandler,
+    StartUpdatesIntentHandler,
     EmailIntentHandler,
     NameIntentHandler,
     MobileIntentHandler,
